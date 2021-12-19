@@ -340,7 +340,10 @@ class Node:
         logger.debug("%s clear_missed_blocks: channels=%s", self, channels)
 
         # Alert if validator was missing blocks (only if more than 1 block)
-        if self.is_missing_blocks and self._consecutive_blocks_missed > 1:
+        if (
+            self.is_missing_blocks
+            and self._consecutive_blocks_missed > self._missed_blocks_info_boundary
+        ):
             channels.alert_info(
                 NoLongerMissingBlocksAlert(self.name, self._consecutive_blocks_missed)
             )
