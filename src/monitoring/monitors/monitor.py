@@ -7,10 +7,14 @@ from src.utils.redis_api import RedisApi
 
 
 class Monitor:
-
-    def __init__(self, monitor_name: str, channels: ChannelSet,
-                 logger: logging.Logger, redis: Optional[RedisApi],
-                 internal_conf: InternalConfig) -> None:
+    def __init__(
+        self,
+        monitor_name: str,
+        channels: ChannelSet,
+        logger: logging.Logger,
+        redis: Optional[RedisApi],
+        internal_conf: InternalConfig,
+    ) -> None:
         super().__init__()
 
         self._monitor_name = monitor_name

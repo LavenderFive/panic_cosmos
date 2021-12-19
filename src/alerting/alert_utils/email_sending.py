@@ -5,9 +5,9 @@ from typing import Optional
 
 
 class EmailSender:
-
-    def __init__(self, smtp: str, sender: str, username: Optional[str],
-                 password: Optional[str]) -> None:
+    def __init__(
+        self, smtp: str, sender: str, username: Optional[str], password: Optional[str]
+    ) -> None:
         super().__init__()
 
         # If blank/None username or None password, EmailSender assumes
@@ -20,16 +20,15 @@ class EmailSender:
 
     def send_email(self, subject: str, message: str, to: str) -> None:
         msg = EmailMessage()
-        msg.set_content('{}\nDate - {}'.format(message, datetime.now()))
+        msg.set_content("{}\nDate - {}".format(message, datetime.now()))
 
-        msg['Subject'] = subject
-        msg['From'] = self._sender
-        msg['To'] = to
+        msg["Subject"] = subject
+        msg["From"] = self._sender
+        msg["To"] = to
 
         # Send the message via the specified SMTP server.
         s = smtplib.SMTP(self._smtp)
-        if None not in [self._username, self._password] \
-                and len(self._username) != 0:
+        if None not in [self._username, self._password] and len(self._username) != 0:
             s.starttls()
             s.login(self._username, self._password)
         s.send_message(msg)

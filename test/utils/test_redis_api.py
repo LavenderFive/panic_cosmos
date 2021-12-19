@@ -5,23 +5,26 @@ from datetime import timedelta
 from time import sleep
 from unittest.mock import patch
 
-from redis import ConnectionError as RedisConnectionError, DataError, \
-    AuthenticationError
+from redis import (
+    ConnectionError as RedisConnectionError,
+    DataError,
+    AuthenticationError,
+)
 
 from src.utils.redis_api import RedisApi
 from test import TestInternalConf, TestUserConf
 
-REDIS_RECENTLY_DOWN_FUNCTION = \
-    'src.utils.redis_api.RedisApi._do_not_use_if_recently_went_down'
+REDIS_RECENTLY_DOWN_FUNCTION = (
+    "src.utils.redis_api.RedisApi._do_not_use_if_recently_went_down"
+)
 
 
 class TestRedisApiWithRedisOnline(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         # Same as in setUp(), to avoid running all tests if Redis is offline
 
-        logger = logging.getLogger('dummy')
+        logger = logging.getLogger("dummy")
         db = TestInternalConf.redis_test_database
         host = TestUserConf.redis_host
         port = TestUserConf.redis_port
@@ -32,36 +35,42 @@ class TestRedisApiWithRedisOnline(unittest.TestCase):
         try:
             redis.ping_unsafe()
         except RedisConnectionError:
-            raise Exception('Redis is not online.')
+            raise Exception("Redis is not online.")
 
     def setUp(self) -> None:
-        self.logger = logging.getLogger('dummy')
+        self.logger = logging.getLogger("dummy")
         self.db = TestInternalConf.redis_test_database
         self.host = TestUserConf.redis_host
         self.port = TestUserConf.redis_port
-        self.namespace = 'testnamespace'
+        self.namespace = "testnamespace"
         self.password = TestUserConf.redis_password
-        self.redis = RedisApi(self.logger, self.db, self.host, self.port,
-                              password=self.password, namespace=self.namespace)
+        self.redis = RedisApi(
+            self.logger,
+            self.db,
+            self.host,
+            self.port,
+            password=self.password,
+            namespace=self.namespace,
+        )
 
         # Ping Redis
         try:
             self.redis.ping_unsafe()
         except RedisConnectionError:
-            self.fail('Redis is not online.')
+            self.fail("Redis is not online.")
 
         # Clear test database
         self.redis.delete_all_unsafe()
 
-        self.key1 = 'key1'
-        self.key2 = 'key2'
-        self.key3 = 'key3'
-        self.key4 = 'key4'
+        self.key1 = "key1"
+        self.key2 = "key2"
+        self.key3 = "key3"
+        self.key4 = "key4"
 
-        self.val1 = 'val1'
-        self.val1_bytes = bytes('val1', encoding='utf8')
-        self.val2 = 'val2'
-        self.val2_bytes = bytes('val2', encoding='utf8')
+        self.val1 = "val1"
+        self.val1_bytes = bytes("val1", encoding="utf8")
+        self.val2 = "val2"
+        self.val2_bytes = bytes("val2", encoding="utf8")
         self.val3_int = 123
         self.val4 = str(True)
         self.val4_bool = True
@@ -69,7 +78,7 @@ class TestRedisApiWithRedisOnline(unittest.TestCase):
         self.time = timedelta(seconds=3)
         self.time_with_error_margin = timedelta(seconds=4)
 
-        self.default_str = 'DEFAULT'
+        self.default_str = "DEFAULT"
         self.default_int = 789
         self.default_bool = False
 
@@ -77,14 +86,19 @@ class TestRedisApiWithRedisOnline(unittest.TestCase):
         self.redis.delete_all_unsafe()
 
     def test_set_unsafe_throws_exception_if_incorrect_password(self):
-        redis_bad_pass = RedisApi(self.logger, self.db, self.host, self.port,
-                                  password='incorrect password',
-                                  namespace=self.namespace)
+        redis_bad_pass = RedisApi(
+            self.logger,
+            self.db,
+            self.host,
+            self.port,
+            password="incorrect password",
+            namespace=self.namespace,
+        )
 
         self.redis.set_unsafe(self.key1, self.val1)  # works
         try:
             redis_bad_pass.set_unsafe(self.key1, self.val1)
-            self.fail('Expected AuthenticationError to be thrown')
+            self.fail("Expected AuthenticationError to be thrown")
         except AuthenticationError:
             pass
 
@@ -95,15 +109,12 @@ class TestRedisApiWithRedisOnline(unittest.TestCase):
     def test_set_unsafe_throws_exception_if_invalid_type(self):
         try:
             self.redis.set_unsafe(self.key1, True)
-            self.fail('Expected DataError exception to be thrown.')
+            self.fail("Expected DataError exception to be thrown.")
         except DataError:
             pass
 
     def test_set_multiple_unsafe_sets_multiple_key_value_pairs(self):
-        self.redis.set_multiple_unsafe({
-            self.key1: self.val1,
-            self.key2: self.val2
-        })
+        self.redis.set_multiple_unsafe({self.key1: self.val1, self.key2: self.val2})
         self.assertEqual(self.redis.get_unsafe(self.key1), self.val1_bytes)
         self.assertEqual(self.redis.get_unsafe(self.key2), self.val2_bytes)
 
@@ -116,52 +127,57 @@ class TestRedisApiWithRedisOnline(unittest.TestCase):
 
     def test_get_unsafe_returns_default_for_unset_key(self):
         self.assertEqual(
-            self.redis.get_unsafe(self.key1, default=self.default_str),
-            self.default_str)
+            self.redis.get_unsafe(self.key1, default=self.default_str), self.default_str
+        )
 
     def test_get_unsafe_returns_set_value(self):
         self.redis.set_unsafe(self.key1, self.val1)
         self.assertEqual(
-            self.redis.get_unsafe(self.key1, default=self.default_str),
-            self.val1_bytes)
+            self.redis.get_unsafe(self.key1, default=self.default_str), self.val1_bytes
+        )
 
     def test_get_unsafe_returns_none_for_none_string(self):
-        self.redis.set_unsafe(self.key1, 'None')
-        self.assertIsNone(
-            self.redis.get_unsafe(self.key1, default=self.default_str))
+        self.redis.set_unsafe(self.key1, "None")
+        self.assertIsNone(self.redis.get_unsafe(self.key1, default=self.default_str))
 
     def test_get_int_unsafe_returns_set_integer(self):
         self.redis.set_unsafe(self.key3, self.val3_int)
         self.assertEqual(
             self.redis.get_int_unsafe(self.key3, default=self.default_int),
-            self.val3_int)
+            self.val3_int,
+        )
 
     def test_get_int_unsafe_returns_default_for_unset_key(self):
         self.assertEqual(
             self.redis.get_int_unsafe(self.key3, default=self.default_int),
-            self.default_int)
+            self.default_int,
+        )
 
     def test_get_int_unsafe_returns_default_for_non_integer_value(self):
         self.redis.set_unsafe(self.key2, self.val2)
         self.assertEqual(
             self.redis.get_int_unsafe(self.key2, default=self.default_int),
-            self.default_int)
+            self.default_int,
+        )
 
     def test_get_bool_unsafe_returns_set_boolean(self):
         self.redis.set_unsafe(self.key4, self.val4)
         self.assertEqual(
             self.redis.get_bool_unsafe(self.key4, default=self.default_bool),
-            self.val4_bool)
+            self.val4_bool,
+        )
 
     def test_get_bool_unsafe_returns_default_for_unset_key(self):
         self.assertEqual(
             self.redis.get_bool_unsafe(self.key4, default=self.default_bool),
-            self.default_bool)
+            self.default_bool,
+        )
 
     def test_get_bool_unsafe_returns_false_for_non_boolean_value(self):
         self.redis.set_unsafe(self.key1, self.val1)
         self.assertFalse(
-            self.redis.get_bool_unsafe(self.key1, default=self.default_bool))
+            self.redis.get_bool_unsafe(self.key1, default=self.default_bool)
+        )
 
     def test_exists_unsafe_returns_true_if_exists(self):
         self.redis.set_unsafe(self.key1, self.val1)
@@ -198,14 +214,14 @@ class TestRedisApiWithRedisOnline(unittest.TestCase):
         self.assertListEqual(keys_list, [self.key3])
 
     def test_get_keys_unsafe_gets_only_keys_that_match_prefix_pattern(self):
-        prefixed_key1 = 'aaa' + self.key1
-        prefixed_key2 = 'bbb' + self.key2
-        prefixed_key3 = 'aa' + self.key3
+        prefixed_key1 = "aaa" + self.key1
+        prefixed_key2 = "bbb" + self.key2
+        prefixed_key3 = "aa" + self.key3
         self.redis.set_unsafe(prefixed_key1, self.val1)
         self.redis.set_unsafe(prefixed_key2, self.val2)
         self.redis.set_unsafe(prefixed_key3, self.val3_int)
 
-        keys_list = self.redis.get_keys_unsafe('aa*')
+        keys_list = self.redis.get_keys_unsafe("aa*")
         self.assertSetEqual(set(keys_list), {prefixed_key1, prefixed_key3})
 
     def test_remove_unsafe_does_nothing_if_key_does_not_exists(self):
@@ -239,19 +255,15 @@ class TestRedisApiWithRedisOnline(unittest.TestCase):
         self.assertIsNone(self.redis.set(self.key1, True))
 
     def test_set_multiple_sets_multiple_key_value_pairs(self):
-        self.redis.set_multiple({
-            self.key1: self.val1,
-            self.key2: self.val2
-        })
+        self.redis.set_multiple({self.key1: self.val1, self.key2: self.val2})
         self.assertEqual(self.redis.get(self.key1), self.val1_bytes)
         self.assertEqual(self.redis.get(self.key2), self.val2_bytes)
 
     @patch(REDIS_RECENTLY_DOWN_FUNCTION, return_value=True)
     def test_set_multiple_returns_none_and_nothing_set_if_redis_down(self, _):
-        self.assertIsNone(self.redis.set_multiple({
-            self.key1: self.val1,
-            self.key2: self.val2
-        }))
+        self.assertIsNone(
+            self.redis.set_multiple({self.key1: self.val1, self.key2: self.val2})
+        )
         self.assertFalse(self.redis.exists_unsafe(self.key1))
         self.assertFalse(self.redis.exists_unsafe(self.key2))
 
@@ -268,70 +280,72 @@ class TestRedisApiWithRedisOnline(unittest.TestCase):
         self.assertFalse(self.redis.exists_unsafe(self.key1))
 
     def test_get_returns_default_for_unset_key(self):
-        self.assertEqual(self.redis.get(self.key1, default=self.default_str),
-                         self.default_str)
+        self.assertEqual(
+            self.redis.get(self.key1, default=self.default_str), self.default_str
+        )
 
     def test_get_returns_set_value(self):
         self.redis.set(self.key1, self.val1)
-        self.assertEqual(self.redis.get(self.key1, default=self.default_str),
-                         self.val1_bytes)
+        self.assertEqual(
+            self.redis.get(self.key1, default=self.default_str), self.val1_bytes
+        )
 
     def test_get_returns_none_for_none_string(self):
-        self.redis.set(self.key1, 'None')
+        self.redis.set(self.key1, "None")
         self.assertIsNone(self.redis.get(self.key1, default=self.default_str))
 
     @patch(REDIS_RECENTLY_DOWN_FUNCTION, return_value=True)
     def test_get_returns_default_if_redis_down(self, _):
         self.redis.set_unsafe(self.key1, self.val1)
-        self.assertEqual(self.redis.get(self.key1, default=self.default_str),
-                         self.default_str)
+        self.assertEqual(
+            self.redis.get(self.key1, default=self.default_str), self.default_str
+        )
 
     def test_get_int_returns_set_integer(self):
         self.redis.set(self.key3, self.val3_int)
         self.assertEqual(
-            self.redis.get_int(self.key3, default=self.default_int),
-            self.val3_int)
+            self.redis.get_int(self.key3, default=self.default_int), self.val3_int
+        )
 
     def test_get_int_returns_default_for_unset_key(self):
         self.assertEqual(
-            self.redis.get_int(self.key3, default=self.default_int),
-            self.default_int)
+            self.redis.get_int(self.key3, default=self.default_int), self.default_int
+        )
 
     def test_get_int_returns_default_for_non_integer_value(self):
         self.redis.set(self.key2, self.val2)
         self.assertEqual(
-            self.redis.get_int(self.key2, default=self.default_int),
-            self.default_int)
+            self.redis.get_int(self.key2, default=self.default_int), self.default_int
+        )
 
     @patch(REDIS_RECENTLY_DOWN_FUNCTION, return_value=True)
     def test_get_int_returns_default_if_redis_down(self, _):
         self.redis.set_unsafe(self.key3, self.val3_int)
         self.assertEqual(
-            self.redis.get_int(self.key3, default=self.default_int),
-            self.default_int)
+            self.redis.get_int(self.key3, default=self.default_int), self.default_int
+        )
 
     def test_get_bool_returns_set_boolean(self):
         self.redis.set(self.key4, self.val4)
         self.assertEqual(
-            self.redis.get_bool(self.key4, default=self.default_bool),
-            self.val4_bool)
+            self.redis.get_bool(self.key4, default=self.default_bool), self.val4_bool
+        )
 
     def test_get_bool_returns_default_for_unset_key(self):
         self.assertEqual(
-            self.redis.get_bool(self.key4, default=self.default_bool),
-            self.default_bool)
+            self.redis.get_bool(self.key4, default=self.default_bool), self.default_bool
+        )
 
     def test_get_bool_returns_false_for_non_boolean_value(self):
         self.redis.set(self.key1, self.val1)
-        self.assertFalse(
-            self.redis.get_bool(self.key1, default=self.default_bool))
+        self.assertFalse(self.redis.get_bool(self.key1, default=self.default_bool))
 
     @patch(REDIS_RECENTLY_DOWN_FUNCTION, return_value=True)
     def test_get_bool_returns_default_if_redis_down(self, _):
         self.redis.set_unsafe(self.key4, self.val4)
         self.assertEqual(
-            self.redis.get_bool(self.key4, default=self.default_bool),
-            self.default_bool)
+            self.redis.get_bool(self.key4, default=self.default_bool), self.default_bool
+        )
 
     def test_exists_returns_true_if_exists(self):
         self.redis.set(self.key1, self.val1)
@@ -373,14 +387,14 @@ class TestRedisApiWithRedisOnline(unittest.TestCase):
         self.assertListEqual(keys_list, [self.key3])
 
     def test_get_keys_gets_only_keys_that_match_prefix_pattern(self):
-        prefixed_key1 = 'aaa' + self.key1
-        prefixed_key2 = 'bbb' + self.key2
-        prefixed_key3 = 'aa' + self.key3
+        prefixed_key1 = "aaa" + self.key1
+        prefixed_key2 = "bbb" + self.key2
+        prefixed_key3 = "aa" + self.key3
         self.redis.set_unsafe(prefixed_key1, self.val1)
         self.redis.set_unsafe(prefixed_key2, self.val2)
         self.redis.set_unsafe(prefixed_key3, self.val3_int)
 
-        keys_list = self.redis.get_keys('aa*')
+        keys_list = self.redis.get_keys("aa*")
         self.assertSetEqual(set(keys_list), {prefixed_key1, prefixed_key3})
 
     @patch(REDIS_RECENTLY_DOWN_FUNCTION, return_value=True)
@@ -439,41 +453,42 @@ class TestRedisApiWithRedisOnline(unittest.TestCase):
 
 
 class TestRedisApiWithRedisOffline(unittest.TestCase):
-
     def setUp(self) -> None:
-        self.logger = logging.getLogger('dummy')
+        self.logger = logging.getLogger("dummy")
         self.db = TestInternalConf.redis_test_database
-        self.host = 'dummyhost'
+        self.host = "dummyhost"
         self.port = TestUserConf.redis_port
-        self.namespace = 'testnamespace'
-        self.redis = RedisApi(self.logger, self.db, self.host,
-                              self.port, namespace=self.namespace)
+        self.namespace = "testnamespace"
+        self.redis = RedisApi(
+            self.logger, self.db, self.host, self.port, namespace=self.namespace
+        )
 
-        self.key = 'key'
-        self.val = 'val'
+        self.key = "key"
+        self.val = "val"
         self.time = timedelta.max
 
     def test_add_namespace_adds_namespace(self):
-        key = 'some key'
-        key_with_namespace = self.namespace + ':' + key
+        key = "some key"
+        key_with_namespace = self.namespace + ":" + key
 
         self.assertEqual(key_with_namespace, self.redis._add_namespace(key))
 
     def test_remove_namespace_remove_namespace(self):
-        key = 'some key'
-        key_with_namespace = self.namespace + ':' + key
+        key = "some key"
+        key_with_namespace = self.namespace + ":" + key
 
         self.assertEqual(key, self.redis._remove_namespace(key_with_namespace))
 
     def test_add_namespace_adds_nothing_if_already_added_namespace(self):
-        key = 'some key'
-        key_with_namespace = self.namespace + ':' + key
+        key = "some key"
+        key_with_namespace = self.namespace + ":" + key
 
-        self.assertEqual(key_with_namespace,
-                         self.redis._add_namespace(key_with_namespace))
+        self.assertEqual(
+            key_with_namespace, self.redis._add_namespace(key_with_namespace)
+        )
 
     def test_remove_namespace_removes_nothing_if_no_namespace(self):
-        key = 'some key'
+        key = "some key"
 
         self.assertEqual(key, self.redis._remove_namespace(key))
 
@@ -481,7 +496,7 @@ class TestRedisApiWithRedisOffline(unittest.TestCase):
 
         try:
             self.redis.set_unsafe(self.key, self.val)
-            self.fail('Expected RedisConnectionError exception to be thrown.')
+            self.fail("Expected RedisConnectionError exception to be thrown.")
         except RedisConnectionError:
             pass
 
@@ -489,7 +504,7 @@ class TestRedisApiWithRedisOffline(unittest.TestCase):
 
         try:
             self.redis.set_multiple_unsafe({self.key: self.val})
-            self.fail('Expected RedisConnectionError exception to be thrown.')
+            self.fail("Expected RedisConnectionError exception to be thrown.")
         except RedisConnectionError:
             pass
 
@@ -497,7 +512,7 @@ class TestRedisApiWithRedisOffline(unittest.TestCase):
 
         try:
             self.redis.set_for_unsafe(self.key, self.val, self.time)
-            self.fail('Expected RedisConnectionError exception to be thrown.')
+            self.fail("Expected RedisConnectionError exception to be thrown.")
         except RedisConnectionError:
             pass
 
@@ -505,7 +520,7 @@ class TestRedisApiWithRedisOffline(unittest.TestCase):
 
         try:
             self.redis.get_unsafe(self.key)
-            self.fail('Expected RedisConnectionError exception to be thrown.')
+            self.fail("Expected RedisConnectionError exception to be thrown.")
         except RedisConnectionError:
             pass
 
@@ -513,7 +528,7 @@ class TestRedisApiWithRedisOffline(unittest.TestCase):
 
         try:
             self.redis.get_int_unsafe(self.key)
-            self.fail('Expected RedisConnectionError exception to be thrown.')
+            self.fail("Expected RedisConnectionError exception to be thrown.")
         except RedisConnectionError:
             pass
 
@@ -521,7 +536,7 @@ class TestRedisApiWithRedisOffline(unittest.TestCase):
 
         try:
             self.redis.get_bool_unsafe(self.key)
-            self.fail('Expected RedisConnectionError exception to be thrown.')
+            self.fail("Expected RedisConnectionError exception to be thrown.")
         except RedisConnectionError:
             pass
 
@@ -529,7 +544,7 @@ class TestRedisApiWithRedisOffline(unittest.TestCase):
 
         try:
             self.redis.exists_unsafe(self.key)
-            self.fail('Expected RedisConnectionError exception to be thrown.')
+            self.fail("Expected RedisConnectionError exception to be thrown.")
         except RedisConnectionError:
             pass
 
@@ -537,7 +552,7 @@ class TestRedisApiWithRedisOffline(unittest.TestCase):
 
         try:
             self.redis.get_keys_unsafe()
-            self.fail('Expected RedisConnectionError exception to be thrown.')
+            self.fail("Expected RedisConnectionError exception to be thrown.")
         except RedisConnectionError:
             pass
 
@@ -545,7 +560,7 @@ class TestRedisApiWithRedisOffline(unittest.TestCase):
 
         try:
             self.redis.remove_unsafe(self.key)
-            self.fail('Expected RedisConnectionError exception to be thrown.')
+            self.fail("Expected RedisConnectionError exception to be thrown.")
         except RedisConnectionError:
             pass
 
@@ -553,7 +568,7 @@ class TestRedisApiWithRedisOffline(unittest.TestCase):
 
         try:
             self.redis.delete_all_unsafe()
-            self.fail('Expected RedisConnectionError exception to be thrown.')
+            self.fail("Expected RedisConnectionError exception to be thrown.")
         except RedisConnectionError:
             pass
 
@@ -570,7 +585,7 @@ class TestRedisApiWithRedisOffline(unittest.TestCase):
         self.assertIsNone(self.redis.get(self.key))
 
     def test_get_returns_default_if_default_specified(self):
-        default = 'default'
+        default = "default"
         self.assertEqual(self.redis.get(self.key, default=default), default)
 
     def test_get_int_returns_none_if_no_default_specified(self):
@@ -585,8 +600,7 @@ class TestRedisApiWithRedisOffline(unittest.TestCase):
 
     def test_get_bool_returns_default_if_default_specified(self):
         default = True
-        self.assertEqual(self.redis.get_bool(self.key, default=default),
-                         default)
+        self.assertEqual(self.redis.get_bool(self.key, default=default), default)
 
     def test_exists_returns_false(self):
         self.assertFalse(self.redis.exists(self.key))
@@ -604,7 +618,7 @@ class TestRedisApiWithRedisOffline(unittest.TestCase):
 
         try:
             self.redis.ping_unsafe()
-            self.fail('Expected RedisConnectionError exception to be thrown.')
+            self.fail("Expected RedisConnectionError exception to be thrown.")
         except RedisConnectionError:
             pass
 
@@ -623,12 +637,11 @@ class TestRedisApiWithRedisOffline(unittest.TestCase):
 
 
 class TestRedisNamespaceWithRedisOnline(unittest.TestCase):
-
     @classmethod
     def setUpClass(cls) -> None:
         # Same as in setUp(), to avoid running all tests if Redis is offline
 
-        logger = logging.getLogger('dummy')
+        logger = logging.getLogger("dummy")
         db = TestInternalConf.redis_test_database
         host = TestUserConf.redis_host
         port = TestUserConf.redis_port
@@ -639,44 +652,59 @@ class TestRedisNamespaceWithRedisOnline(unittest.TestCase):
         try:
             redis.ping_unsafe()
         except RedisConnectionError:
-            raise Exception('Redis is not online.')
+            raise Exception("Redis is not online.")
 
     def setUp(self) -> None:
-        self.logger = logging.getLogger('dummy')
+        self.logger = logging.getLogger("dummy")
         self.db = TestInternalConf.redis_test_database
         self.host = TestUserConf.redis_host
         self.port = TestUserConf.redis_port
         self.password = TestUserConf.redis_password
 
-        self.namespace1 = 'testnamespace1'
-        self.namespace2 = 'testnamespace2'
+        self.namespace1 = "testnamespace1"
+        self.namespace2 = "testnamespace2"
 
         self.redis = RedisApi(
-            self.logger, self.db, self.host, self.port,
-            self.password, namespace=self.namespace1)
+            self.logger,
+            self.db,
+            self.host,
+            self.port,
+            self.password,
+            namespace=self.namespace1,
+        )
         self.same_namespace = RedisApi(
-            self.logger, self.db, self.host, self.port,
-            self.password, namespace=self.namespace1)
+            self.logger,
+            self.db,
+            self.host,
+            self.port,
+            self.password,
+            namespace=self.namespace1,
+        )
         self.different_namespace = RedisApi(
-            self.logger, self.db, self.host, self.port,
-            self.password, namespace=self.namespace2)
+            self.logger,
+            self.db,
+            self.host,
+            self.port,
+            self.password,
+            namespace=self.namespace2,
+        )
 
         # Ping Redis (all of above instances use same host, port, pass)
         try:
             self.redis.ping_unsafe()
         except RedisConnectionError:
-            self.fail('Redis is not online.')
+            self.fail("Redis is not online.")
 
         # Clear test database (all of above instances use same database)
         self.redis.delete_all_unsafe()
 
-        self.key1 = 'key1'
-        self.key2 = 'key2'
+        self.key1 = "key1"
+        self.key2 = "key2"
 
-        self.val1 = 'val1'
-        self.val1_bytes = bytes('val1', encoding='utf8')
-        self.val2 = 'val2'
-        self.val2_bytes = bytes('val2', encoding='utf8')
+        self.val1 = "val1"
+        self.val1_bytes = bytes("val1", encoding="utf8")
+        self.val2 = "val2"
+        self.val2_bytes = bytes("val2", encoding="utf8")
 
     def tearDown(self) -> None:
         self.redis.delete_all_unsafe()
@@ -686,13 +714,13 @@ class TestRedisNamespaceWithRedisOnline(unittest.TestCase):
         self.redis.set_unsafe(self.key1, self.val1)
 
         # Use raw Redis command to get, to bypass automatically-added namespace
-        get_value = self.redis._redis.get(self.namespace1 + ':' + self.key1)
+        get_value = self.redis._redis.get(self.namespace1 + ":" + self.key1)
 
         self.assertEqual(get_value, self.val1_bytes)
 
     def test_get_uses_namespace_internally(self):
         # Use raw Redis command to set, to bypass automatically-added namespace
-        self.redis._redis.set(self.namespace1 + ':' + self.key1, self.val1)
+        self.redis._redis.set(self.namespace1 + ":" + self.key1, self.val1)
 
         get_value = self.redis.get_unsafe(self.key1)
         self.assertEqual(get_value, self.val1_bytes)
@@ -700,31 +728,34 @@ class TestRedisNamespaceWithRedisOnline(unittest.TestCase):
     def test_redis_api_with_same_namespace_has_access_to_same_store(self):
         self.redis.set_unsafe(self.key1, self.val1)
 
-        self.assertEqual(
-            self.same_namespace.get_unsafe(self.key1), self.val1_bytes)
+        self.assertEqual(self.same_namespace.get_unsafe(self.key1), self.val1_bytes)
 
     def test_redis_api_with_different_namespace_has_separate_store(self):
         self.redis.set_unsafe(self.key1, self.val1)
 
         self.assertNotEqual(
-            self.different_namespace.get_unsafe(self.key1), self.val1_bytes)
+            self.different_namespace.get_unsafe(self.key1), self.val1_bytes
+        )
 
 
 class TestRedisApiLiveAndDownFeaturesWithRedisOffline(unittest.TestCase):
-
     def setUp(self) -> None:
-        self.logger = logging.getLogger('dummy')
+        self.logger = logging.getLogger("dummy")
         self.db = TestInternalConf.redis_test_database
-        self.host = 'dummyhost'
+        self.host = "dummyhost"
         self.port = 6379
         self.live_check_time_interval = timedelta(seconds=3)
         self.live_check_time_interval_with_error_margin = timedelta(seconds=3.5)
-        self.redis = RedisApi(self.logger, self.db, self.host, self.port,
-                              live_check_time_interval=
-                              self.live_check_time_interval)
+        self.redis = RedisApi(
+            self.logger,
+            self.db,
+            self.host,
+            self.port,
+            live_check_time_interval=self.live_check_time_interval,
+        )
 
-        self.key = 'key'
-        self.val = 'val'
+        self.key = "key"
+        self.val = "val"
         self.time = timedelta.max
 
     def test_is_live_by_default(self):
@@ -746,14 +777,14 @@ class TestRedisApiLiveAndDownFeaturesWithRedisOffline(unittest.TestCase):
         try:
             self.redis._do_not_use_if_recently_went_down()
         except Exception:
-            self.fail('Expected to be allowed to use Redis.')
+            self.fail("Expected to be allowed to use Redis.")
 
     def test_not_allowed_to_use_if_set_as_down_and_within_time_interval(self):
         self.redis._set_as_down()
         # noinspection PyBroadException
         try:
             self.redis._do_not_use_if_recently_went_down()
-            self.fail('Expected to not be allowed to use Redis.')
+            self.fail("Expected to not be allowed to use Redis.")
         except Exception:
             pass
 
@@ -764,4 +795,4 @@ class TestRedisApiLiveAndDownFeaturesWithRedisOffline(unittest.TestCase):
         try:
             self.redis._do_not_use_if_recently_went_down()
         except Exception:
-            self.fail('Expected to be allowed to use Redis.')
+            self.fail("Expected to be allowed to use Redis.")

@@ -6,9 +6,9 @@ def prompt(prompt_msg: str) -> str:
 def yn_prompt(prompt_msg: str) -> bool:
     while True:
         input_str = prompt(prompt_msg)
-        if input_str.lower() in ['y', '']:
+        if input_str.lower() in ["y", ""]:
             return True
-        elif input_str.lower() == 'n':
+        elif input_str.lower() == "n":
             return False
         else:
-            print('Invalid input.')
+            print("Invalid input.")

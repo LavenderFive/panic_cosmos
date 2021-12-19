@@ -1,16 +1,18 @@
 from typing import Optional, List
 
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, \
-    Handler, CallbackContext
+from telegram.ext import Updater, CommandHandler, Handler, CallbackContext
 
 from src.alerting.alert_utils.telegram_bot_api import TelegramBotApi
 
 
 class TelegramCommandHandler:
-
-    def __init__(self, bot_token: str, authorised_chat_id: Optional[str],
-                 handlers: Optional[List[Handler]] = None) -> None:
+    def __init__(
+        self,
+        bot_token: str,
+        authorised_chat_id: Optional[str],
+        handlers: Optional[List[Handler]] = None,
+    ) -> None:
         self._bot_token = bot_token
         self._authorised_chat_id = authorised_chat_id
 
@@ -18,7 +20,7 @@ class TelegramCommandHandler:
         self._updater = Updater(token=bot_token, use_context=True)
 
         # Set up handlers
-        ping_handler = CommandHandler('ping', self._ping_callback)
+        ping_handler = CommandHandler("ping", self._ping_callback)
         self._updater.dispatcher.add_handler(ping_handler)
         if handlers is not None:
             for h in handlers:
@@ -38,17 +40,19 @@ class TelegramCommandHandler:
         if self._authorised_chat_id in [None, str(update.message.chat_id)]:
             return True
         else:
-            update.message.reply_text("Unrecognised user. "
-                                      "This event has been reported.")
+            update.message.reply_text(
+                "Unrecognised user. " "This event has been reported."
+            )
             api = TelegramBotApi(self._bot_token, self._authorised_chat_id)
             api.send_message(
-                'Received command from unrecognised user: '
-                'update={}, context={}'.format(update, context))
+                "Received command from unrecognised user: "
+                "update={}, context={}".format(update, context)
+            )
             return False
 
     def _ping_callback(self, update: Update, context: CallbackContext) -> None:
         if self.authorise(update, context):
-            update.message.reply_text('PONG!')
+            update.message.reply_text("PONG!")
 
     def stop(self) -> None:
         # This is useful only when the Updater is set to run in background

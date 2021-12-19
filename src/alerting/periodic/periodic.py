@@ -8,9 +8,13 @@ from src.utils.redis_api import RedisApi
 
 
 class PeriodicAliveReminder:
-
-    def __init__(self, interval: timedelta, channel_set: ChannelSet,
-                 mute_key: str, redis: Optional[RedisApi]):
+    def __init__(
+        self,
+        interval: timedelta,
+        channel_set: ChannelSet,
+        mute_key: str,
+        redis: Optional[RedisApi],
+    ):
         self._interval = interval
         self._channel_set = channel_set
         self._mute_key = mute_key

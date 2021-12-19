@@ -7,7 +7,6 @@ from src.utils.timing import TimedTaskLimiter, TimedOccurrenceTracker
 
 
 class TestTimedTaskLimiter(unittest.TestCase):
-
     def setUp(self) -> None:
         self.interval_seconds = 2
         self.interval_timedelta = timedelta(seconds=self.interval_seconds)
@@ -59,13 +58,11 @@ class TestTimedTaskLimiter(unittest.TestCase):
 
 
 class TestTimedOccurrenceTracker(unittest.TestCase):
-
     def setUp(self) -> None:
         self.max_occurrences = 4
         self.interval_seconds = 3
         self.interval_timedelta = timedelta(seconds=self.interval_seconds)
-        self.ttl = TimedOccurrenceTracker(self.max_occurrences,
-                                          self.interval_timedelta)
+        self.ttl = TimedOccurrenceTracker(self.max_occurrences, self.interval_timedelta)
 
     def test_max_occurrences_is_supplied_max_occurrences(self):
         self.assertEqual(self.ttl.max_occurrences, self.max_occurrences)
@@ -76,8 +73,8 @@ class TestTimedOccurrenceTracker(unittest.TestCase):
     def test_time_interval_pretty_returns_strfdelta_result(self):
         self.assertEqual(
             self.ttl.time_interval_pretty,
-            strfdelta(self.interval_timedelta,
-                      "{hours}h, {minutes}m, {seconds}s"))
+            strfdelta(self.interval_timedelta, "{hours}h, {minutes}m, {seconds}s"),
+        )
 
     def test_not_too_many_occurrence_if_no_occurrences(self):
         self.assertFalse(self.ttl.too_many_occurrences())

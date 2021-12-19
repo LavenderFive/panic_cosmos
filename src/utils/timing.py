@@ -21,8 +21,7 @@ class TimedTaskLimiter:
         return self._last_time_that_did_task
 
     def can_do_task(self) -> bool:
-        return (datetime.now() - self._last_time_that_did_task) \
-               > self._time_interval
+        return (datetime.now() - self._last_time_that_did_task) > self._time_interval
 
     def did_task(self) -> None:
         self._last_time_that_did_task = datetime.now()
@@ -61,8 +60,7 @@ class TimedOccurrenceTracker:
         self._last_occurrences.get()
         self._last_occurrences.put(at_time)
 
-    def too_many_occurrences(self, from_time: Optional[datetime] = None) \
-            -> bool:
+    def too_many_occurrences(self, from_time: Optional[datetime] = None) -> bool:
         # Default: get current time
         if from_time is None:
             from_time = datetime.now()

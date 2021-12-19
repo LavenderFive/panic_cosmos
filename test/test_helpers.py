@@ -9,9 +9,8 @@ class DummyException(Exception):
 
 
 class CounterChannel(Channel):
-
     def __init__(self, logger: logging.Logger) -> None:
-        super().__init__('counter_channel', logger, redis=None)
+        super().__init__("counter_channel", logger, redis=None)
         self.info_count = 0
         self.minor_count = 0
         self.major_count = 0
@@ -42,5 +41,9 @@ class CounterChannel(Channel):
         self.latest_alert = alert
 
     def no_alerts(self):
-        return self.info_count == 0 and self.minor_count == 0 and \
-               self.major_count == 0 and self.error_count == 0
+        return (
+            self.info_count == 0
+            and self.minor_count == 0
+            and self.major_count == 0
+            and self.error_count == 0
+        )
