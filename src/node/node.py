@@ -58,7 +58,8 @@ class Node:
         self._missed_blocks_danger_boundary = (
             internal_conf.missed_blocks_danger_boundary
         )
-
+        self._missed_blocks_info_boundary = internal_conf.missed_blocks_info_boundary
+        self._missed_blocks_minor_boundary = internal_conf.missed_blocks_minor_boundary
         self._downtime_initial_alert_delayer = TimedTaskLimiter(
             internal_conf.downtime_initial_alert_delay
         )
@@ -277,6 +278,8 @@ class Node:
 
         # Variable alias for improved readability
         danger = self._missed_blocks_danger_boundary
+        blocks_info = self._missed_blocks_info_boundary
+        blocks_minor = self._missed_blocks_minor_boundary
 
         logger.debug(
             "%s add_missed_block: before=%s, new=%s, missing_validators = %s, "
@@ -294,13 +297,13 @@ class Node:
         # Alert (varies depending on whether was already missing blocks)
         if not self.is_missing_blocks:
             pass  # Do not alert on first missed block
-        elif 2 <= blocks_missed < danger:
+        elif blocks_info <= blocks_missed < danger:
             channels.alert_info(
                 MissedBlocksAlert(
                     self.name, blocks_missed, block_height, missing_validators
                 )
             )  # 2+ blocks missed inside danger range
-        elif blocks_missed == 5:
+        elif blocks_missed == blocks_minor:
             channels.alert_minor(
                 MissedBlocksAlert(
                     self.name, blocks_missed, block_height, missing_validators
