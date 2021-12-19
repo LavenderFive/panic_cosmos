@@ -97,6 +97,10 @@ class InternalConfig(ConfigParser):
         self._check_if_peer_safe_and_danger_boundaries_are_valid()
         self.full_node_peer_danger_boundary = int(
             section['full_node_peer_danger_boundary'])
+        self.missed_blocks_info_boundary = int(
+            section['missed_blocks_info_boundary'])
+        self.missed_blocks_minor_boundary = int(
+            section['missed_blocks_minor_boundary'])
         self.missed_blocks_danger_boundary = int(
             section['missed_blocks_danger_boundary'])
         self.github_error_interval_seconds = timedelta(seconds=int(
